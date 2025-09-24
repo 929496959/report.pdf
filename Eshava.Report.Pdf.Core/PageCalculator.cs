@@ -118,6 +118,7 @@ namespace Eshava.Report.Pdf.Core
 						Strikeout = element.Strikeout,
 						Underline = element.Underline,
 						Width = element.Width,
+						ReduceLineBreaksForLists = element.ReduceLineBreaksForLists 
 					};
 
 					html.ConvertContentToHtml();

@@ -56,6 +56,9 @@ namespace Eshava.Report.Pdf.Core.Models
 		[XmlAttribute]
 		public bool NoShift { get; set; }
 
+		[XmlAttribute]
+		public bool ReduceLineBreaksForLists { get; set; }
+
 		[XmlIgnore]
 		public IEnumerable<TextSegment> TextSegments
 		{
@@ -64,7 +67,7 @@ namespace Eshava.Report.Pdf.Core.Models
 				if (_textSegments == default)
 				{
 					var interpreter = new HtmlInterpreter();
-					_textSegments = interpreter.AnalyzeText(GetFont(), Content);
+					_textSegments = interpreter.AnalyzeText(GetFont(), Content, ReduceLineBreaksForLists);
 				}
 
 				return _textSegments;

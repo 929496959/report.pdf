@@ -51,9 +51,9 @@ namespace Eshava.Report.Pdf.Core
 					}
 					else
 					{
-						htmlContent.Append("<span>");
+						htmlContent.Append("<p>");
 						htmlContent.Append(contentParts[index]);
-						htmlContent.Append("</span>");
+						htmlContent.Append("</p>");
 					}
 				}
 				else if (contentParts[index].IsNullOrEmpty())
@@ -62,9 +62,9 @@ namespace Eshava.Report.Pdf.Core
 				}
 				else
 				{
-					htmlContent.Append("<span>");
+					htmlContent.Append("<p>");
 					htmlContent.Append(contentParts[index]);
-					htmlContent.Append("</span>");
+					htmlContent.Append("</p>");
 				}
 			}
 
@@ -76,7 +76,7 @@ namespace Eshava.Report.Pdf.Core
 			return htmlContent.ToString();
 		}
 
-		public IEnumerable<TextSegment> AnalyzeText(Font font, string text)
+		public IEnumerable<TextSegment> AnalyzeText(Font font, string text, bool reduceLineBreaksForLists)
 		{
 			font.Color = font.Color?.Trim().ConvertHexColorToDecimalColor();
 			font.Color = font.Color.ConvertRGBFunctionToDecimalColor();
@@ -108,7 +108,7 @@ namespace Eshava.Report.Pdf.Core
 					Font = font
 				};
 
-				AnalyzeNode(xmlDocument.FirstChild, segment);
+				AnalyzeNode(xmlDocument.FirstChild, segment, reduceLineBreaksForLists);
 
 				FlatSegmentTree(segment, textSegments);
 
@@ -219,7 +219,7 @@ namespace Eshava.Report.Pdf.Core
 			}
 		}
 
-		private void AnalyzeNode(XmlNode node, TextSegmentExtended parentSegment)
+		private void AnalyzeNode(XmlNode node, TextSegmentExtended parentSegment, bool reduceLineBreaksForLists)
 		{
 			if (node.NodeType == XmlNodeType.Text)
 			{
@@ -284,9 +284,16 @@ namespace Eshava.Report.Pdf.Core
 
 			if (xmlElement.Name.ToLower() == UL_TAG || xmlElement.Name.ToLower() == OL_TAG)
 			{
-				if (!CheckForTagInPreviousElements(xmlElement, P_TAG, UL_TAG, OL_TAG))
+				if (reduceLineBreaksForLists)
 				{
-					// Add only a new line if the previous node is no list tag (<br> is be ignored)
+					if (!CheckForTagInPreviousElements(xmlElement, P_TAG, UL_TAG, OL_TAG))
+					{
+						// Add only a new line if the previous node is no list tag (<br> is be ignored)
+						AddNewLineSegement(parentSegment, segment.Font);
+					}
+				}
+				else
+				{
 					AddNewLineSegement(parentSegment, segment.Font);
 				}
 
@@ -300,7 +307,7 @@ namespace Eshava.Report.Pdf.Core
 					segment.LineIndent = 1.5;
 				}
 			}
-			else if (xmlElement.Name.ToLower() == P_TAG && !CheckForTagInPreviousElements(xmlElement, P_TAG, UL_TAG, OL_TAG))
+			else if (xmlElement.Name.ToLower() == P_TAG && (!reduceLineBreaksForLists || !CheckForTagInPreviousElements(xmlElement, P_TAG, UL_TAG, OL_TAG)))
 			{
 				AddNewLineSegement(parentSegment, segment.Font);
 			}
@@ -327,10 +334,14 @@ namespace Eshava.Report.Pdf.Core
 
 			foreach (XmlNode item in node.ChildNodes)
 			{
-				AnalyzeNode(item, segment);
+				AnalyzeNode(item, segment, reduceLineBreaksForLists);
 			}
 
-			if (xmlElement.Name.ToLower() == P_TAG && !CheckForTagInNextElements(xmlElement, P_TAG, UL_TAG, OL_TAG))
+			var tagsForNextElementsCheck = reduceLineBreaksForLists
+				? new[] { P_TAG, UL_TAG, OL_TAG }
+				: new[] { P_TAG };
+
+			if (xmlElement.Name.ToLower() == P_TAG && !CheckForTagInNextElements(xmlElement, !reduceLineBreaksForLists, tagsForNextElementsCheck))
 			{
 				AddNewLineSegement(parentSegment, segment.Font);
 			}
@@ -403,7 +414,7 @@ namespace Eshava.Report.Pdf.Core
 			return false;
 		}
 
-		private bool CheckForTagInNextElements(XmlNode xmlElement, params string[] tags)
+		private bool CheckForTagInNextElements(XmlNode xmlElement, bool onlyNextSibling, params string[] tags)
 		{
 			while (xmlElement?.NextSibling != null)
 			{
@@ -413,6 +424,11 @@ namespace Eshava.Report.Pdf.Core
 				}
 
 				xmlElement = xmlElement.NextSibling;
+
+				if (onlyNextSibling)
+				{
+					break;
+				}
 			}
 
 			return false;

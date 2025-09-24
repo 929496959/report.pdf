@@ -34,6 +34,9 @@ namespace Eshava.Report.Pdf.Core.Models
 		public bool EnableHtmlAutoConvert { get; set; }
 
 		[XmlAttribute]
+		public bool ReduceLineBreaksForLists { get; set; } = true;
+
+		[XmlAttribute]
 		public bool Italic { get; set; }
 
 		[XmlAttribute]
