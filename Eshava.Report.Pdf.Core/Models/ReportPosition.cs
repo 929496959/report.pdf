@@ -377,16 +377,32 @@ namespace Eshava.Report.Pdf.Core.Models
 			// Text does not fit completely on the current page
 			if (maxElementHeightOnPage < size.Height + text.PosY)
 			{
+				// Check for invalid PosY
+				if (text.PosY >= maxElementHeightOnPage)
+				{
+					text.PosY -= maxElementHeightOnPage;
+					noMatchList.Add(text);
+
+					return;
+				}
+
 				// Split text until it fits on the rest of the current page
 				var textparts = text.SplitBySpacesAndLineBreaks();
 				var eText = CheckTextParts(graphics, textparts, text, elementList, ref currentHeight, maxElementHeightOnPage, invertAnalyse);
 				if (eText == null)
 				{
 					// Nothing could be split
+					if ((size.Height + text.PosY) >= maxElementHeightOnPage)
+					{
+						text.PosY -= maxElementHeightOnPage;
+						noMatchList.Add(text);
+
+						return;
+					}
 
 					// IF eText == null -> Add complete text to the list of elements for the next page 
 					// ELSE -> otherwise add remaining text to the list of elements for the next page
-					noMatchList.Add(eText ?? text);
+					noMatchList.Add(text);
 				}
 				else
 				{
@@ -412,16 +428,32 @@ namespace Eshava.Report.Pdf.Core.Models
 			// Text does not fit completely on the current page
 			if (maxElementHeightOnPage < size.Height + html.PosY)
 			{
+				// Check for invalid PosY
+				if (html.PosY >= maxElementHeightOnPage)
+				{
+					html.PosY -= maxElementHeightOnPage;
+					noMatchList.Add(html);
+
+					return;
+				}
+
 				// Split text until it fits on the rest of the current page
 				var textparts = html.SplitBySpaces();
 				var eText = CheckTextSegmentParts(graphics, textparts, html, elementList, ref currentHeight, maxElementHeightOnPage, invertAnalyse);
 				if (eText == null)
 				{
-					//// Nothing could be split
+					// Nothing could be split
+					if ((size.Height + html.PosY) >= maxElementHeightOnPage)
+					{
+						html.PosY -= maxElementHeightOnPage;
+						noMatchList.Add(html);
+
+						return;
+					}
 
 					// IF eText == null -> Add complete text to the list of elements for the next page 
 					// ELSE -> otherwise add remaining text to the list of elements for the next page
-					noMatchList.Add(eText ?? html);
+					noMatchList.Add(html);
 				}
 				else
 				{
